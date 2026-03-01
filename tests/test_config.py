@@ -7,6 +7,17 @@ import pytest
 import goodwill.config as config
 
 
+@pytest.fixture(autouse=True)
+def _restore_config():
+    """Reload config after each test to undo importlib.reload side-effects.
+
+    Teardown runs after monkeypatch (LIFO order), so the env variable has
+    already been restored to its original state before config is reloaded.
+    """
+    yield
+    importlib.reload(config)
+
+
 def test_float_env_invalid_string_raises_clear_error(monkeypatch):
     monkeypatch.setenv("GOODWILL_G_W1", "not-a-float")
     with pytest.raises(ValueError, match="GOODWILL_G_W1"):
