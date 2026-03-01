@@ -346,3 +346,29 @@ class TestFullPipeline:
         ugs_clean = compute_UGS(G=G_clean, CG=CG, T=2, w1=0.5, w2=0.5)
         ugs_dirty = compute_UGS(G=G_dirty, CG=CG, T=2, w1=0.5, w2=0.5)
         assert ugs_dirty < ugs_clean
+
+
+class TestNumericInputValidation:
+    def test_compute_G_rejects_non_finite_and_bool(self):
+        with pytest.raises(ValueError, match="CR"):
+            compute_G(CR=float("nan"), ES=50, BT=50, RG=50, NCB=0, T=1)
+        with pytest.raises(ValueError, match="ES"):
+            compute_G(CR=50, ES=float("inf"), BT=50, RG=50, NCB=0, T=1)
+        with pytest.raises(ValueError, match="RG"):
+            compute_G(CR=50, ES=50, BT=50, RG=True, NCB=0, T=1)
+
+    def test_compute_CG_rejects_non_finite_and_bool(self):
+        with pytest.raises(ValueError, match="CS"):
+            compute_CG(CS=float("nan"), BR=50, CA=50, SS=50, NCB_consumer=0)
+        with pytest.raises(ValueError, match="BR"):
+            compute_CG(CS=50, BR=float("-inf"), CA=50, SS=50, NCB_consumer=0)
+        with pytest.raises(ValueError, match="NCB_consumer"):
+            compute_CG(CS=50, BR=50, CA=50, SS=50, NCB_consumer=False)
+
+    def test_compute_UGS_rejects_non_finite_T_and_bool(self):
+        with pytest.raises(ValueError, match="T"):
+            compute_UGS(G=10, CG=20, T=float("nan"))
+        with pytest.raises(ValueError, match="T"):
+            compute_UGS(G=10, CG=20, T=float("inf"))
+        with pytest.raises(ValueError, match="T"):
+            compute_UGS(G=10, CG=20, T=True)
