@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Goodwill KPI Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f5f7fa; color: #222; }
+    header { background: #1a2d47; color: #fff; padding: 1rem 2rem; }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header p  { margin: .25rem 0 0; font-size: .85rem; color: #aac; }
+    .warning  { background: #fff3cd; border-left: 4px solid #e6a817; padding: .75rem 1rem;
+                margin: 1rem 2rem; font-size: .85rem; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem 2rem; }
+    @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+    section { background: #fff; border-radius: 6px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    section h2 { margin: 0 0 1rem; font-size: 1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: .5rem; }
+    label { display: block; margin-bottom: .6rem; font-size: .85rem; }
+    label span { display: inline-block; width: 220px; color: #555; }
+    input[type=number] { width: 100px; padding: .3rem .5rem; border: 1px solid #ccc;
+                         border-radius: 4px; font-size: .9rem; }
+    .badge { display: inline-block; font-size: .7rem; padding: .1rem .4rem; border-radius: 3px;
+             margin-left: .4rem; vertical-align: middle; }
+    .badge-time { background: #dbeafe; color: #1e40af; }
+    .badge-instant { background: #dcfce7; color: #166534; }
+    .badge-penalty { background: #fee2e2; color: #991b1b; }
+    button { margin-top: 1rem; padding: .55rem 1.4rem; background: #1a2d47; color: #fff;
+             border: none; border-radius: 4px; cursor: pointer; font-size: .95rem; }
+    button:hover { background: #253f63; }
+    #results { grid-column: 1 / -1; }
+    .scores { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .score-card { flex: 1; min-width: 140px; background: #f0f4ff; border-radius: 6px;
+                  padding: 1rem; text-align: center; }
+    .score-card .label { font-size: .75rem; color: #555; text-transform: uppercase; }
+    .score-card .value { font-size: 2rem; font-weight: 700; color: #1a2d47; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #eee; }
+    th { background: #f0f4ff; color: #333; font-weight: 600; }
+    .err { color: #c00; font-size: .85rem; margin-top: .5rem; }
+    #results { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Goodwill KPI — Governance Dashboard</h1>
+  <p>Read-only calculation interface · All equations executed server-side · No data is stored</p>
+</header>
+
+<div class="warning">
+  ⚠ <strong>Scores are comparative indicators, not financial valuations.</strong>
+  This interface performs no forecasting, optimization, or action suggestions.
+</div>
+
+<main>
+
+  <!-- G inputs -->
+  <section>
+    <h2>General Goodwill (G) Inputs <span class="badge badge-time">time-normalized</span></h2>
+    <label><span>Customer Retention (CR)</span>
+      <input id="CR" type="number" min="0" max="100" step="0.01" value="80" /></label>
+    <label><span>Employee Satisfaction (ES)</span>
+      <input id="ES" type="number" min="0" max="100" step="0.01" value="75" /></label>
+    <label><span>Brand Trust (BT)</span>
+      <input id="BT" type="number" min="0" max="100" step="0.01" value="70" /></label>
+    <label><span>Revenue Growth (RG)</span>
+      <input id="RG" type="number" min="0" max="100" step="0.01" value="65" /></label>
+    <label><span>Net Customer Backlash (NCB) <span class="badge badge-penalty">penalty</span></span>
+      <input id="NCB" type="number" min="0" max="100" step="0.01" value="10" /></label>
+    <label><span>Time factor (T)</span>
+      <input id="T" type="number" min="0.01" step="0.01" value="4" /></label>
+
+    <h2 style="margin-top:1.25rem">G Weights</h2>
+    <label><span>w1 (CR)</span><input id="g_w1" type="number" step="0.01" value="0.25" /></label>
+    <label><span>w2 (ES)</span><input id="g_w2" type="number" step="0.01" value="0.25" /></label>
+    <label><span>w3 (BT)</span><input id="g_w3" type="number" step="0.01" value="0.25" /></label>
+    <label><span>w(t) (RG)</span><input id="g_w_t" type="number" step="0.01" value="0.25" /></label>
+  </section>
+
+  <!-- CG inputs -->
+  <section>
+    <h2>Consumer Goodwill (CG) Inputs <span class="badge badge-instant">instantaneous</span></h2>
+    <label><span>Customer Satisfaction (CS)</span>
+      <input id="CS" type="number" min="0" max="100" step="0.01" value="80" /></label>
+    <label><span>Brand Reputation (BR)</span>
+      <input id="BR" type="number" min="0" max="100" step="0.01" value="75" /></label>
+    <label><span>Customer Advocacy (CA)</span>
+      <input id="CA" type="number" min="0" max="100" step="0.01" value="70" /></label>
+    <label><span>Service Speed (SS)</span>
+      <input id="SS" type="number" min="0" max="100" step="0.01" value="65" /></label>
+    <label><span>Negative Consumer Backlash (NCB_consumer) <span class="badge badge-penalty">penalty</span></span>
+      <input id="NCB_consumer" type="number" min="0" max="100" step="0.01" value="5" /></label>
+
+    <h2 style="margin-top:1.25rem">CG Weights</h2>
+    <label><span>w1 (CS)</span><input id="cg_w1" type="number" step="0.01" value="0.25" /></label>
+    <label><span>w2 (BR)</span><input id="cg_w2" type="number" step="0.01" value="0.25" /></label>
+    <label><span>w3 (CA)</span><input id="cg_w3" type="number" step="0.01" value="0.25" /></label>
+    <label><span>w4 (SS)</span><input id="cg_w4" type="number" step="0.01" value="0.25" /></label>
+
+    <h2 style="margin-top:1.25rem">UGS Weights</h2>
+    <label><span>w1 (G in UGS)</span><input id="ugs_w1" type="number" step="0.01" value="0.5" /></label>
+    <label><span>w2 (CG in UGS)</span><input id="ugs_w2" type="number" step="0.01" value="0.5" /></label>
+
+    <button onclick="runCalculation()">Calculate</button>
+    <div id="err" class="err"></div>
+  </section>
+
+  <!-- Results -->
+  <section id="results">
+    <h2>Results</h2>
+    <div class="scores">
+      <div class="score-card">
+        <div class="label">G <span class="badge badge-time">time-normalized</span></div>
+        <div class="value" id="res-G">—</div>
+      </div>
+      <div class="score-card">
+        <div class="label">CG <span class="badge badge-instant">instantaneous</span></div>
+        <div class="value" id="res-CG">—</div>
+      </div>
+      <div class="score-card">
+        <div class="label">UGS <span class="badge badge-time">time-normalized</span></div>
+        <div class="value" id="res-UGS">—</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:.9rem;margin:.75rem 0 .4rem">G — Term Contributions</h3>
+    <table id="table-G"></table>
+
+    <h3 style="font-size:.9rem;margin:.75rem 0 .4rem">CG — Term Contributions</h3>
+    <table id="table-CG"></table>
+
+    <h3 style="font-size:.9rem;margin:.75rem 0 .4rem">UGS — Term Contributions</h3>
+    <table id="table-UGS"></table>
+  </section>
+
+</main>
+
+<script>
+  function num(id) { return parseFloat(document.getElementById(id).value); }
+
+  function buildTable(tableId, rows) {
+    const t = document.getElementById(tableId);
+    t.innerHTML = '<tr><th>Term</th><th>Value</th><th>Note</th></tr>' +
+      rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]||''}</td></tr>`).join('');
+  }
+
+  async function runCalculation() {
+    document.getElementById('err').textContent = '';
+    const payload = {
+      CR: num('CR'), ES: num('ES'), BT: num('BT'), RG: num('RG'),
+      NCB: num('NCB'), CS: num('CS'), BR: num('BR'), CA: num('CA'),
+      SS: num('SS'), NCB_consumer: num('NCB_consumer'), T: num('T'),
+      g_w1: num('g_w1'), g_w2: num('g_w2'), g_w3: num('g_w3'), g_w_t: num('g_w_t'),
+      cg_w1: num('cg_w1'), cg_w2: num('cg_w2'), cg_w3: num('cg_w3'), cg_w4: num('cg_w4'),
+      ugs_w1: num('ugs_w1'), ugs_w2: num('ugs_w2'),
+    };
+
+    let resp;
+    try {
+      resp = await fetch('/api/goodwill/calculate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      document.getElementById('err').textContent = 'Network error: ' + e.message;
+      return;
+    }
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      document.getElementById('err').textContent = 'Error ' + resp.status + ': ' + txt;
+      return;
+    }
+
+    const d = await resp.json();
+
+    document.getElementById('res-G').textContent   = d.G.toFixed(4);
+    document.getElementById('res-CG').textContent  = d.CG.toFixed(4);
+    document.getElementById('res-UGS').textContent = d.UGS.toFixed(4);
+
+    buildTable('table-G', [
+      ['CR × w1', d.G_terms.CR_term.toFixed(4), ''],
+      ['ES × w2', d.G_terms.ES_term.toFixed(4), ''],
+      ['BT × w3', d.G_terms.BT_term.toFixed(4), ''],
+      ['RG × w(t)', d.G_terms.RG_term.toFixed(4), 'time-dependent weight'],
+      ['− NCB', '−' + d.G_terms.NCB_penalty.toFixed(4), 'penalty — reduces G'],
+      ['÷ T', d.G_terms.T, 'time normalization divisor'],
+    ]);
+
+    buildTable('table-CG', [
+      ['CS × w1', d.CG_terms.CS_term.toFixed(4), ''],
+      ['BR × w2', d.CG_terms.BR_term.toFixed(4), ''],
+      ['CA × w3', d.CG_terms.CA_term.toFixed(4), ''],
+      ['SS × w4', d.CG_terms.SS_term.toFixed(4), ''],
+      ['− NCB_consumer', '−' + d.CG_terms.NCB_consumer_penalty.toFixed(4), 'penalty — reduces CG'],
+      ['Time-normalized', 'No', 'instantaneous metric'],
+    ]);
+
+    buildTable('table-UGS', [
+      ['G × w1', d.UGS_terms.G_term.toFixed(4), ''],
+      ['CG × w2', d.UGS_terms.CG_term.toFixed(4), ''],
+      ['÷ T', d.UGS_terms.T, 'time normalization divisor'],
+    ]);
+
+    document.getElementById('results').style.display = 'block';
+  }
+</script>
+
+</body>
+</html>
