@@ -225,16 +225,17 @@ Goodwill-KPI/
 │   ├── __init__.py
 │   ├── test_dashboard.py
 │   └── test_goodwill.py
+├── docs/
+│   ├── CALIBRATION.md
+│   ├── CITATION.cff
+│   ├── INPUT-GOVERNANCE.md
+│   ├── LICENSE
+│   ├── OBSERVABILITY.md
+│   ├── ROADMAP.md
+│   ├── SECURITY.md
+│   └── VALIDATION.md
 ├── conftest.py
-├── CALIBRATION.md
-├── CITATION.cff
-├── INPUT-GOVERNANCE.md
-├── LICENSE
-├── OBSERVABILITY.md
 ├── README.md
-├── ROADMAP.md
-├── SECURITY.md                 ← new file
-├── VALIDATION.md
 ├── render.yaml
 ├── requirements-dev.txt
 └── requirements.txt
