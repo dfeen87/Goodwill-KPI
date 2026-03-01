@@ -35,6 +35,15 @@ Goodwill-KPI/
 │   ├── main.py                 # FastAPI application and API routes
 │   └── templates/
 │       └── dashboard.html      # Read-only browser dashboard
+├── docs/
+│   ├── CALIBRATION.md          # Calibration guidance and tuning notes
+│   ├── CITATION.cff            # Citation metadata
+│   ├── INPUT-GOVERNANCE.md     # Input governance and data quality guidelines
+│   ├── LICENSE                 # MIT License
+│   ├── OBSERVABILITY.md        # Observability and monitoring notes
+│   ├── ROADMAP.md              # Project roadmap
+│   ├── SECURITY.md             # Security policy
+│   └── VALIDATION.md           # Validation methodology and test coverage notes
 ├── goodwill/
 │   ├── __init__.py
 │   ├── README.md               # Detailed equation reference and usage guide
@@ -45,9 +54,6 @@ Goodwill-KPI/
 │   ├── test_dashboard.py       # API and dashboard integration tests
 │   └── test_goodwill.py        # Unit tests for all metric functions
 ├── conftest.py                 # Shared pytest fixtures
-├── CITATION.cff                # Citation metadata
-├── LICENSE                     # MIT License
-├── VALIDATION.md               # Validation methodology and test coverage notes
 ├── render.yaml                 # Render.com deployment configuration
 ├── requirements-dev.txt        # Development dependencies (pytest, httpx, …)
 └── requirements.txt            # Runtime dependencies (fastapi, uvicorn, …)
@@ -155,4 +161,4 @@ All weights default to equal weighting and can be overridden at process startup 
 
 ## License
 
-[MIT](LICENSE) © 2026 Don Michael Feeney Jr.
+[MIT](docs/LICENSE) © 2026 Don Michael Feeney Jr.
