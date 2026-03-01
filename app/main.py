@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
@@ -92,6 +92,12 @@ class GoodwillInput(BaseModel):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
+
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    """Redirect root URL to the dashboard."""
+    return RedirectResponse(url="/dashboard", status_code=302)
 
 
 @app.get("/health", status_code=200)
