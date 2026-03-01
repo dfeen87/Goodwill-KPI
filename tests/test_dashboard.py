@@ -9,6 +9,10 @@ Coverage:
 - POST /api/goodwill/calculate with T=0 returns 422.
 - Response includes term contributions, penalty labels, and time-normalization flags.
 - Results are fully traceable to inputs (deterministic).
+- POST /api/goodwill/export returns xlsx file download by default.
+- POST /api/goodwill/export?format=csv returns csv file download.
+- Export file contains all required sections.
+- Export rejects invalid inputs (422) and invalid format (422).
 """
 
 import pytest
@@ -184,4 +188,138 @@ def test_calculate_T_negative_returns_422():
 def test_calculate_missing_required_field_returns_422():
     payload = {k: v for k, v in _VALID_PAYLOAD.items() if k != "CR"}
     resp = client.post("/api/goodwill/calculate", json=payload)
+    assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# /api/goodwill/export — xlsx (default)
+# ---------------------------------------------------------------------------
+
+
+def test_export_xlsx_returns_200():
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    assert resp.status_code == 200
+
+
+def test_export_xlsx_content_type():
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    assert "spreadsheetml" in resp.headers["content-type"]
+
+
+def test_export_xlsx_filename_in_disposition():
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    disposition = resp.headers.get("content-disposition", "")
+    assert "goodwill_export_" in disposition
+    assert ".xlsx" in disposition
+
+
+def test_export_xlsx_is_valid_workbook():
+    import io
+    import openpyxl
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    wb = openpyxl.load_workbook(io.BytesIO(resp.content))
+    assert "Goodwill Export" in wb.sheetnames
+
+
+def test_export_xlsx_contains_required_sections():
+    import io
+    import openpyxl
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    wb = openpyxl.load_workbook(io.BytesIO(resp.content))
+    ws = wb["Goodwill Export"]
+    sections = {ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)}
+    assert "G Inputs" in sections
+    assert "CG Inputs" in sections
+    assert "Weights & Time" in sections
+    assert "Term Breakdown" in sections
+    assert "Final Results" in sections
+
+
+def test_export_xlsx_final_results_match_calculate():
+    import io
+    import openpyxl
+    calc = client.post("/api/goodwill/calculate", json=_VALID_PAYLOAD).json()
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    wb = openpyxl.load_workbook(io.BytesIO(resp.content))
+    ws = wb["Goodwill Export"]
+    results = {
+        ws.cell(row=r, column=2).value: ws.cell(row=r, column=3).value
+        for r in range(2, ws.max_row + 1)
+        if ws.cell(row=r, column=1).value == "Final Results"
+    }
+    assert results["G (General Goodwill)"] == pytest.approx(calc["G"])
+    assert results["CG (Consumer Goodwill)"] == pytest.approx(calc["CG"])
+    assert results["UGS (Unified Goodwill Score)"] == pytest.approx(calc["UGS"])
+
+
+def test_export_xlsx_ncb_penalty_is_negative():
+    import io
+    import openpyxl
+    resp = client.post("/api/goodwill/export", json=_VALID_PAYLOAD)
+    wb = openpyxl.load_workbook(io.BytesIO(resp.content))
+    ws = wb["Goodwill Export"]
+    for r in range(2, ws.max_row + 1):
+        label = ws.cell(row=r, column=2).value or ""
+        if "NCB penalty" in label or "NCB_consumer penalty" in label:
+            assert ws.cell(row=r, column=3).value <= 0
+
+
+# ---------------------------------------------------------------------------
+# /api/goodwill/export?format=csv
+# ---------------------------------------------------------------------------
+
+
+def test_export_csv_returns_200():
+    resp = client.post("/api/goodwill/export?format=csv", json=_VALID_PAYLOAD)
+    assert resp.status_code == 200
+
+
+def test_export_csv_content_type():
+    resp = client.post("/api/goodwill/export?format=csv", json=_VALID_PAYLOAD)
+    assert "text/csv" in resp.headers["content-type"]
+
+
+def test_export_csv_filename_in_disposition():
+    resp = client.post("/api/goodwill/export?format=csv", json=_VALID_PAYLOAD)
+    disposition = resp.headers.get("content-disposition", "")
+    assert "goodwill_export_" in disposition
+    assert ".csv" in disposition
+
+
+def test_export_csv_contains_required_sections():
+    import csv
+    import io
+    resp = client.post("/api/goodwill/export?format=csv", json=_VALID_PAYLOAD)
+    reader = csv.DictReader(io.StringIO(resp.text))
+    sections = {row["Section"] for row in reader}
+    assert "G Inputs" in sections
+    assert "CG Inputs" in sections
+    assert "Weights & Time" in sections
+    assert "Term Breakdown" in sections
+    assert "Final Results" in sections
+
+
+# ---------------------------------------------------------------------------
+# /api/goodwill/export — input validation
+# ---------------------------------------------------------------------------
+
+
+def test_export_invalid_format_returns_422():
+    resp = client.post("/api/goodwill/export?format=pdf", json=_VALID_PAYLOAD)
+    assert resp.status_code == 422
+
+
+def test_export_missing_required_field_returns_422():
+    payload = {k: v for k, v in _VALID_PAYLOAD.items() if k != "CR"}
+    resp = client.post("/api/goodwill/export", json=payload)
+    assert resp.status_code == 422
+
+
+def test_export_metric_above_100_returns_422():
+    resp = client.post("/api/goodwill/export", json={**_VALID_PAYLOAD, "CR": 101})
+    assert resp.status_code == 422
+
+
+def test_export_T_zero_returns_422():
+    resp = client.post("/api/goodwill/export", json={**_VALID_PAYLOAD, "T": 0})
     assert resp.status_code == 422
