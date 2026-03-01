@@ -1,6 +1,59 @@
 # Goodwill-KPI
 
-A deterministic, auditable framework for quantifying organizational and consumer goodwill.
+[![CI](https://github.com/dfeen87/Goodwill-KPI/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/Goodwill-KPI/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org)
+
+## What is this?
+
+**Goodwill-KPI** is a deterministic, auditable framework for quantifying organizational and consumer goodwill as measurable key performance indicators (KPIs). It provides three pure mathematical equations — General Goodwill (G), Consumer Goodwill (CG), and a Unified Goodwill Score (UGS) — backed by a lightweight FastAPI dashboard that executes and visualizes the calculations in a browser.
+
+## Why does it exist?
+
+Goodwill is one of the most strategically important yet least rigorously measured assets an organization holds. Most existing approaches treat it as a subjective narrative or a residual accounting entry. Goodwill-KPI replaces intuition with a transparent, weight-configurable formula that can be tracked over time, exported for audit, and re-run deterministically from any set of inputs. Because all logic lives in pure functions with no side effects, the scores are fully reproducible and traceable to their inputs.
+
+## Who is it for?
+
+- **Strategy and operations teams** that want a structured, quantitative lens on brand health, employee experience, and customer sentiment without building custom analytics tooling.
+- **Governance and compliance functions** that need auditable KPI calculations with documented assumptions and repeatable results.
+- **Researchers and analysts** who want a reference implementation of goodwill quantification that can be extended, weight-tuned, or embedded in a larger data pipeline.
+- **Developers** who want to self-host a read-only KPI dashboard or integrate the `goodwill` Python package directly into existing systems.
+
+> ⚠ **Scores are comparative indicators, not financial valuations.** They are meaningful in trend context across comparable time windows, not as standalone absolute numbers.
+
+---
+
+## Repository Structure
+
+```
+Goodwill-KPI/
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # CI pipeline (pytest on Python 3.11 & 3.12)
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI application and API routes
+│   └── templates/
+│       └── dashboard.html      # Read-only browser dashboard
+├── goodwill/
+│   ├── __init__.py
+│   ├── README.md               # Detailed equation reference and usage guide
+│   ├── config.py               # Weight defaults (env-var overridable)
+│   └── metrics.py              # Pure functions: compute_G, compute_CG, compute_UGS
+├── tests/
+│   ├── __init__.py
+│   ├── test_dashboard.py       # API and dashboard integration tests
+│   └── test_goodwill.py        # Unit tests for all metric functions
+├── conftest.py                 # Shared pytest fixtures
+├── CITATION.cff                # Citation metadata
+├── LICENSE                     # MIT License
+├── VALIDATION.md               # Validation methodology and test coverage notes
+├── render.yaml                 # Render.com deployment configuration
+├── requirements-dev.txt        # Development dependencies (pytest, httpx, …)
+└── requirements.txt            # Runtime dependencies (fastapi, uvicorn, …)
+```
+
+---
 
 ## Core Equations
 
@@ -10,58 +63,61 @@ A deterministic, auditable framework for quantifying organizational and consumer
 | Consumer Goodwill (CG) | `(CS·w1)+(BR·w2)+(CA·w3)+(SS·w4)−NCB_consumer` | Instantaneous |
 | Unified Goodwill Score (UGS) | `((G·w1)+(CG·w2)) / T` | Time-normalized |
 
-All inputs must be normalized to **[0, 100]** before being passed to the functions.
+All inputs must be normalized to **[0, 100]** before being passed to the functions. Backlash terms (NCB, NCB_consumer) are first-class destructive forces and are never clamped.
+
+See [`goodwill/README.md`](goodwill/README.md) for full symbol definitions, assumptions, and worked examples.
 
 ---
 
-## Goodwill Dashboard (Render Deployment)
+## Quick Start
 
-A minimal, read-only HTTP dashboard for executing and visualizing Goodwill calculations.
+### Python library
 
-> ⚠ **Scores are comparative indicators, not financial valuations.**
+```python
+from goodwill.metrics import compute_G, compute_CG, compute_UGS
 
-### What the dashboard does
+G   = compute_G(CR=85, ES=78, BT=80, RG=70, NCB=5, T=4)
+CG  = compute_CG(CS=88, BR=82, CA=75, SS=72, NCB_consumer=8)
+UGS = compute_UGS(G=G, CG=CG, T=4)
+```
 
-- Accepts normalized metric inputs for G, CG, and UGS.
-- Accepts configurable weights and time factor (T).
-- Executes all equations **server-side** using the existing pure functions — no logic is duplicated.
-- Displays individual term contributions and final scores.
-- Clearly labels time-normalized vs instantaneous metrics and penalty terms.
+### Dashboard (local)
 
-### What the dashboard does NOT do
+```bash
+# Install runtime dependencies
+pip install -r requirements.txt
 
-- No forecasting, optimization, or action suggestions.
-- No state is stored, mutated, or persisted.
-- No client-side goodwill calculation.
+# Start the development server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-### Routes
+Open `http://localhost:8000/dashboard` in a browser.
+
+---
+
+## API Routes
 
 | Route | Method | Description |
 |---|---|---|
 | `/health` | GET | Liveness probe — returns `{"status": "ok"}` |
 | `/dashboard` | GET | Read-only calculation interface (HTML) |
 | `/api/goodwill/calculate` | POST | Accepts JSON inputs; returns G, CG, UGS and term breakdowns |
+| `/api/goodwill/export` | POST | Returns a downloadable xlsx or csv of the full calculation |
 
-### Local Run
+All goodwill equations are executed **server-side** via the pure functions in `goodwill.metrics`. No state is stored or persisted. No client-side calculation is performed.
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+---
 
-# Start the server (development)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Open `http://localhost:8000/dashboard` in a browser.
-
-### Running Tests
+## Running Tests
 
 ```bash
 pip install -r requirements-dev.txt
 pytest
 ```
 
-### Render Deployment
+---
+
+## Deployment (Render.com)
 
 The repository includes a `render.yaml` that configures a **Render.com** web service.
 
@@ -75,7 +131,11 @@ The repository includes a `render.yaml` that configures a **Render.com** web ser
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
-### Environment Variables
+---
+
+## Configuration
+
+All weights default to equal weighting and can be overridden at process startup via environment variables.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -90,3 +150,9 @@ The repository includes a `render.yaml` that configures a **Render.com** web ser
 | `GOODWILL_CG_W4` | `0.25` | Weight for SS in CG equation |
 | `GOODWILL_UGS_W1` | `0.5` | Weight for G in UGS equation |
 | `GOODWILL_UGS_W2` | `0.5` | Weight for CG in UGS equation |
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 Don Michael Feeney Jr.
