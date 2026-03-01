@@ -1,277 +1,320 @@
-# ROADMAP.md — Goodwill KPI Framework
+# ROADMAP
+
+## Purpose
+
+This document describes the forward-looking roadmap for the Goodwill-KPI project.  
+Its purpose is to make explicit which enhancements are planned, which are intentionally out of scope, and how future work will preserve the deterministic, auditable nature of the core goodwill equations.
+
+The roadmap is descriptive, not prescriptive: it outlines likely directions and priorities while keeping the current implementation stable, reproducible, and safe to adopt in production environments.
 
 ---
 
-## 1. Purpose
+## Scope
 
-This document describes the strategic direction of the Goodwill KPI Framework.
-It communicates what the system is, what it is designed to remain, and what
-categories of enhancement are conceptually consistent with its design
-philosophy — without committing to specific timelines, without introducing new
-dependencies, and without proposing changes to the implemented system.
+This roadmap covers:
 
-The framework is complete and deployed. This document is not a backlog or a
-release plan. It is a governance artifact that defines the boundaries within
-which future evolution is considered philosophically sound, and the boundaries
-beyond which proposed changes would alter the framework's fundamental character.
+- **Optional, non-core enhancements** to:
+  - Security and deployment posture
+  - Calibration methodology and statistical rigor
+  - Input governance and normalization standards
+  - Observability and production operations
+  - Dashboard UX and stakeholder usability
+- **Documentation and governance artifacts** that clarify how Goodwill-KPI should be used and interpreted.
+- **Versioning and release philosophy** for the project.
 
----
+This roadmap explicitly does **not** cover:
 
-## 2. Scope
+- Changes to the core goodwill equations in `goodwill/metrics.py`
+- Fundamental shifts in the project’s purpose (e.g., becoming a financial valuation engine)
+- Turning the project into a multi-tenant SaaS product or user account system
+- Any feature that would introduce persistent state or side-effectful business logic into the core library
 
-**In scope:**
-
-- The strategic design philosophy of the framework
-- Categories of enhancement that are conceptually consistent with the existing
-  architecture
-- Categories of change that are out of scope and would alter the framework's
-  fundamental character
-- Principles that should govern any future evolution
-
-**Out of scope:**
-
-- Specific implementation plans, timelines, or version targets
-- Changes to `goodwill/metrics.py` (the equations are immutable)
-- Changes to the API routes, dashboard, or repository structure
-- New dependencies, new architectural components, or new infrastructure requirements
+The core equations and their deterministic implementation are considered stable and foundational.
 
 ---
 
-## 3. Context
+## Context
 
-The Goodwill KPI Framework was designed around four foundational commitments:
+Goodwill-KPI provides:
 
-1. **Determinism.** Given identical inputs and weight configuration, the system
-   produces identical outputs. No randomness, no approximation, no model drift.
+- A set of **pure, deterministic equations** for:
+  - General Goodwill (G)
+  - Consumer Goodwill (CG)
+  - Unified Goodwill Score (UGS)
+- A **read-only FastAPI dashboard** for executing and visualizing these equations
+- A **Python package** suitable for integration into existing systems
+- A **VALIDATION.md** file documenting simulations and statistical checks
 
-2. **Auditability.** Every score is fully traceable to its inputs. No hidden
-   state, no server-side computation that is not directly derivable from the
-   request.
+The roadmap builds on this foundation by:
 
-3. **Transparency.** The equations, weights, and term breakdowns are exposed
-   directly to consumers. There are no black boxes.
+- Improving **governance readiness** (security posture, input standards, calibration guidance)
+- Enhancing **operational readiness** (observability, deployment clarity)
+- Increasing **stakeholder usability** (dashboard UX, interpretability aids)
+- Maintaining strict separation between:
+  - Core math (`goodwill/metrics.py`)
+  - Configuration (`goodwill/config.py`)
+  - API and dashboard (`app/`)
+  - Documentation and governance artifacts (`*.md`)
 
-4. **Operational realism.** The framework models backlash as a first-class
-   destructive force. Scores can be negative. The system does not artificially
-   constrain outputs to comfortable ranges.
-
-Any future evolution of the framework must preserve all four of these
-commitments. A proposed change that compromises any one of them is
-inconsistent with the framework's design philosophy.
-
----
-
-## 4. Methodology / Approach
-
-### What the Framework Is
-
-The Goodwill KPI Framework is a **calculation layer**, not an analytics
-platform. It accepts normalized inputs, applies documented equations with
-configurable weights, and returns auditable results. It does not store data,
-generate forecasts, optimize weights, or make recommendations. This scope
-boundary is intentional.
-
-### Design Philosophy for Future Evolution
-
-Future evolution should extend the framework's reach without adding complexity
-to its core. Acceptable directions are those that:
-
-- Add new output formats or integrations without changing the calculation layer
-- Add documentation, governance guidance, or operational tooling without
-  changing the application
-- Improve observability or auditability without adding server-side state
-- Extend the weight configuration surface without modifying the equations
-
-Unacceptable directions are those that:
-
-- Introduce machine learning, statistical modeling, or probabilistic scoring
-  into the calculation layer
-- Add server-side state, persistence, or caching
-- Replace the weight-configurable model with a data-fitted model
-- Introduce approximation or non-determinism anywhere in the calculation path
-- Add authentication, user management, or access control to the calculation
-  layer (these remain infrastructure-layer concerns)
-
-### Conceptually Consistent Enhancements
-
-The following enhancements are conceptually consistent with the framework's
-design philosophy. They are described at the concept level only; no implementation
-is proposed.
-
-**1. Additional export formats.** The export endpoint currently supports xlsx
-and csv. Additional formats — JSON-LD for linked data consumers, Parquet for
-analytics pipelines, or signed PDF for compliance archives — would extend the
-framework's reach without altering its calculation layer.
-
-**2. Batch calculation endpoint.** A POST endpoint that accepts an array of
-input vectors and returns an array of results would enable efficient
-multi-period score computation without any change to the underlying equations.
-Each element in the batch would be computed independently, preserving the
-stateless, request-isolated character of the current design.
-
-**3. Extended equation variants.** Organizations may require goodwill
-equations adapted to specific sectors — public sector, nonprofit, healthcare —
-where the relevant components differ from the current G and CG definitions.
-Additional equation variants could be implemented as new pure functions
-alongside the existing ones, without modifying or replacing them.
-
-**4. Time-series score visualization.** The current dashboard displays a single
-calculation. A visualization layer that accepts a time-ordered series of
-archived calculation results and renders trend lines for G, CG, and UGS would
-substantially increase the operational value of the framework for longitudinal
-analysis. This visualization would be purely presentational; no new server-side
-state would be introduced.
-
-**5. Calculation verification endpoint.** An endpoint that accepts two
-calculation records and returns a deterministic comparison — verifying that the
-results are identical given the same inputs and weights — would formalize the
-reproducibility verification practice described in `OBSERVABILITY.md`. This is
-a documentation and governance tool, not a new computational capability.
-
-**6. Weight configuration validation endpoint.** An endpoint that accepts a
-proposed weight configuration, validates it against documented constraints
-(e.g., weights sum to 1.0 within each equation), and returns a structured
-validation report would support the calibration governance process described
-in `CALIBRATION.md` without modifying the calculation layer.
+All future work must respect this separation.
 
 ---
 
-## 5. Governance Considerations
+## Methodology / Approach
 
-### Immutability of the Core Equations
+Future development will follow these principles:
 
-The three goodwill equations in `goodwill/metrics.py` are the intellectual
-foundation of the framework. They have been validated, tested, and published.
-Any change to these equations would require re-validation of all historical
-scores, re-documentation of the mathematical basis, and governance approval
-from the framework's author.
+1. **Core math is immutable**  
+   The equations and their implementation in `goodwill/metrics.py` are treated as a stable reference. Any future work assumes these functions are correct, deterministic, and not subject to refactoring for feature reasons.
 
-Proposals to modify the equations are out of scope for this roadmap and must
-not be treated as routine enhancement requests.
+2. **Optional layers, not mandatory complexity**  
+   Enhancements are layered on top of the existing system as **optional modules, configurations, or documents**, not as required dependencies. A minimal deployment should remain as simple as:
+   - Install dependencies
+   - Run the FastAPI app
+   - Use the dashboard or API
 
-### Backward Compatibility
+3. **Documentation-first for governance features**  
+   For security, calibration, input governance, and observability, the first step is always **clear documentation**:
+   - What is recommended
+   - What is optional
+   - What is out of scope
+   Only then, where appropriate, small, well-bounded implementation hooks may be added.
 
-Any future enhancement must preserve backward compatibility with the current
-API contract. Existing consumers of `/api/goodwill/calculate` and
-`/api/goodwill/export` must continue to function without modification. New
-capabilities must be additive, not substitutive.
+4. **No hidden state, no opaque behavior**  
+   Any future feature must preserve:
+   - Determinism of calculations
+   - Traceability from outputs back to inputs and weights
+   - Clear, inspectable configuration via environment variables or explicit parameters
 
-### Governance of Enhancements
-
-Any change to the deployed system — including the addition of new endpoints or
-new export formats — requires:
-
-- A documented rationale aligned with the framework's design philosophy
-- A review of the change's impact on the framework's four foundational
-  commitments (determinism, auditability, transparency, operational realism)
-- Approval by the framework's maintainer
-- An update to the relevant documentation files before deployment
-
-### Version Management
-
-The framework currently operates at version 1.0.0. Any future release must
-follow semantic versioning:
-
-- **Patch** versions for documentation updates, bug fixes, and dependency
-  security updates that do not alter API behavior.
-- **Minor** versions for additive, backward-compatible new capabilities.
-- **Major** versions for any change that alters the API contract, the equation
-  behavior, or the weight configuration model.
+5. **Versioned, incremental evolution**  
+   Changes will be grouped into minor and patch releases, with clear release notes and no breaking changes to the public API without a major version bump.
 
 ---
 
-## 6. Operational Guidance
+## Governance considerations
 
-1. **Treat this document as a governance constraint, not a feature queue.**
-   The framework is complete. This document defines what future evolution
-   is acceptable — it is not a commitment to implement any specific enhancement.
+The roadmap is designed to support:
 
-2. **Evaluate all enhancement proposals against the four foundational
-   commitments.** A proposal that cannot be evaluated as deterministic,
-   auditable, transparent, and operationally realistic is inconsistent with
-   the framework's design philosophy.
+- **Auditability**  
+  Organizations should be able to:
+  - Reproduce any score from inputs and configuration
+  - Understand how weights and inputs were chosen
+  - Document calibration decisions and normalization standards
 
-3. **Do not modify `goodwill/metrics.py` under any circumstances.** The
-   equations are immutable. Sector-specific or custom equation variants
-   should be implemented as additional pure functions in a new module, not
-   as modifications to the existing functions.
+- **Compliance posture**  
+  While Goodwill-KPI does not process highly sensitive data by default, the roadmap anticipates:
+  - Clear deployment guidance (e.g., private vs. public endpoints)
+  - Optional access controls and rate limiting
+  - Logging and metrics that support internal governance and incident review
 
-4. **Treat the API contract as a published interface.** Changes to request or
-   response schemas require a minor or major version increment and advance
-   notice to all consumers.
+- **Methodological transparency**  
+  Calibration, normalization, and interpretation guidance will be:
+  - Explicit
+  - Documented
+  - Separable from the core equations
+  This avoids “black box” behavior while allowing organizations to adapt the framework to their context.
 
-5. **Prioritize documentation and governance tooling over new computational
-   features.** The framework's value is in its auditability and transparency.
-   Enhancements that improve governance tooling (calibration support,
-   observability, input validation) are more consistent with the framework's
-   purpose than enhancements that add computational sophistication.
-
----
-
-## 7. Risks & Mitigations
-
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| Pressure to add machine learning or predictive scoring to the framework | Medium | High | Enforce the determinism commitment; document it explicitly as an out-of-scope direction |
-| Enhancement proposals that modify core equations without governance review | Low | High | Document the immutability of `metrics.py`; require explicit approval for any change to that file |
-| Backward-incompatible API changes introduced without version increment | Low | High | Enforce semantic versioning; require consumer impact assessment before any API change |
-| Scope creep introducing server-side state or persistence | Low | High | Evaluate all proposals against the statelessness requirement; reject proposals that require state introduction |
-| Documentation allowed to fall out of sync with implementation | Medium | Medium | Treat documentation updates as required components of any enhancement, not optional follow-on work |
-| Enhancement prioritization driven by requests rather than design alignment | Medium | Medium | Use this document as the authoritative filter for evaluating enhancement proposals |
+- **Boundary clarity**  
+  The roadmap will continue to emphasize what Goodwill-KPI is **not**:
+  - Not a financial valuation engine
+  - Not a replacement for accounting goodwill
+  - Not a sentiment classifier or data collection system
+  - Not a multi-tenant SaaS platform
 
 ---
 
-## 8. Summary
+## Operational guidance
 
-The Goodwill KPI Framework is complete. Its strategic direction is conservative
-by design: preserve the four foundational commitments — determinism, auditability,
-transparency, and operational realism — while extending reach through additive,
-backward-compatible enhancements that do not alter the calculation layer.
+This section outlines the main roadmap themes and how they are expected to be applied in real deployments.
 
-The equations are immutable. The API contract is stable. The stateless
-architecture is not subject to change. Future evolution, if any, will be
-additive, documented, and governance-reviewed. This roadmap exists not to
-promise new capabilities, but to define the principled boundaries within which
-the framework can evolve without compromising the properties that make it
-trustworthy.
+### 1. Security and deployment posture (optional hardening)
+
+Planned direction:
+
+- **SECURITY.md** documenting:
+  - Recommended deployment patterns (e.g., behind an API gateway, private network, or VPN)
+  - Optional API key or token-based protection at the FastAPI layer
+  - Optional rate limiting at the reverse proxy or gateway level
+- Clear statement that:
+  - The core library is safe to embed in internal systems
+  - The public exposure of the demo dashboard/API should be controlled by the deployer
+
+Operationally, teams can:
+
+- Deploy the app internally without auth for low-risk use cases
+- Add API gateway-level auth and rate limiting for external or multi-team access
+- Use SECURITY.md as a reference for internal security reviews
+
+### 2. Calibration methodology and statistical rigor
+
+Planned direction:
+
+- **CALIBRATION.md** describing:
+  - How to choose and document weights for different sectors or organizations
+  - How to use historical data to calibrate weights (e.g., correlation with known outcomes)
+  - How to maintain comparability across time and teams
+- Optional examples:
+  - Sector-specific weight presets (e.g., B2B SaaS, consumer retail, non-profit)
+  - A conceptual workflow for calibration using notebooks (kept outside the core package)
+
+Operationally, teams can:
+
+- Start with equal weights (the default)
+- Gradually introduce calibrated weights with documented rationale
+- Use CALIBRATION.md as a governance artifact for internal review and sign-off
+
+### 3. Input governance and normalization standards
+
+Planned direction:
+
+- **INPUT-GOVERNANCE.md** describing:
+  - Required input range ([0, 100]) and why it matters
+  - Recommended normalization pipelines (e.g., mapping survey scores, NPS, or internal indices)
+  - Documentation expectations for each input (source, update frequency, owner)
+- Optional helper patterns (documented, not enforced in code) for:
+  - Handling missing data
+  - Handling outliers
+  - Ensuring consistency across teams and time periods
+
+Operationally, teams can:
+
+- Define internal data contracts for each input (CR, ES, BT, RG, CS, BR, CA, SS, NCB terms)
+- Use INPUT-GOVERNANCE.md as a reference for data engineering and analytics teams
+- Treat normalization decisions as part of their governance process, not as ad-hoc choices
+
+### 4. Observability and production operations
+
+Planned direction:
+
+- **OBSERVABILITY.md** describing:
+  - Recommended logging practices (e.g., structured logs with request IDs, input validation errors, calculation durations)
+  - Optional metrics (e.g., request counts, error rates, latency) exposed via middleware or external tooling
+  - Optional tracing hooks (e.g., OpenTelemetry) for organizations that already use distributed tracing
+
+Operationally, teams can:
+
+- Integrate Goodwill-KPI into existing logging and monitoring stacks
+- Use OBSERVABILITY.md as a guide for:
+  - What to log
+  - How to interpret logs and metrics
+  - How to support incident response and governance reporting
+
+### 5. Dashboard UX and interpretability enhancements
+
+Planned direction (all optional, read-only):
+
+- Scenario quality-of-life improvements:
+  - Local, browser-only saved scenarios (no server-side persistence)
+  - Side-by-side scenario comparison views
+- Interpretability aids:
+  - Inline explanations of each term and its role
+  - Guidance on interpreting negative goodwill or large NCB terms
+- Visualization enhancements:
+  - Contribution breakdown charts (e.g., bar or waterfall)
+  - Time-series views when users supply time-indexed data
+
+Operationally, teams can:
+
+- Use the existing dashboard as-is for simple, read-only exploration
+- Extend or fork the dashboard for richer internal tooling, while preserving the core equations
+- Treat the dashboard as a reference implementation, not a mandated UI
 
 ---
 
-## 9. Repository Tree Update
+## Risks & mitigations
 
-The following shows the updated repository tree with `ROADMAP.md` added at the
-root. No existing files are modified.
+### Risk 1: Scope creep into a full platform
 
-```
-Goodwill-KPI/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   └── templates/
-│       └── dashboard.html
-├── goodwill/
-│   ├── __init__.py
-│   ├── README.md
-│   ├── config.py
-│   └── metrics.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_dashboard.py
-│   └── test_goodwill.py
-├── conftest.py
-├── CALIBRATION.md
-├── CITATION.cff
-├── INPUT-GOVERNANCE.md
-├── LICENSE
-├── OBSERVABILITY.md
-├── README.md
-├── ROADMAP.md                  ← new file
-├── SECURITY.md
-├── VALIDATION.md
-├── render.yaml
-├── requirements-dev.txt
-└── requirements.txt
-```
+**Description:**  
+There is a risk that incremental enhancements (auth, UX, observability) could push the project toward becoming a full-fledged platform rather than a reference implementation.
+
+**Mitigations:**
+
+- Keep all enhancements **optional** and **non-invasive**
+- Maintain a clear boundary between:
+  - Core library
+  - Example API/dashboard
+  - Documentation
+- Use ROADMAP.md to explicitly mark what is out of scope
+
+---
+
+### Risk 2: Misinterpretation as a financial valuation tool
+
+**Description:**  
+Users may misinterpret goodwill scores as financial valuations or accounting measures.
+
+**Mitigations:**
+
+- Continue to emphasize in README and documentation:
+  - Scores are comparative indicators, not valuations
+  - Intended use is trend analysis and strategic insight
+- Add interpretability guidance in future documentation (e.g., CALIBRATION.md, INPUT-GOVERNANCE.md)
+
+---
+
+### Risk 3: Inconsistent calibration across teams
+
+**Description:**  
+Different teams may calibrate weights differently, leading to incomparable scores.
+
+**Mitigations:**
+
+- Provide a clear calibration methodology in CALIBRATION.md
+- Encourage organizations to:
+  - Document calibration decisions
+  - Standardize presets across teams
+- Emphasize that cross-team comparability requires shared calibration standards
+
+---
+
+### Risk 4: Poor input governance leading to misleading outputs
+
+**Description:**  
+If inputs are poorly normalized or inconsistently sourced, outputs may be misleading despite correct equations.
+
+**Mitigations:**
+
+- Provide explicit input governance guidance in INPUT-GOVERNANCE.md
+- Encourage:
+  - Data contracts
+  - Source documentation
+  - Regular review of input pipelines
+- Treat input governance as a first-class part of the methodology
+
+---
+
+### Risk 5: Over-reliance on the dashboard
+
+**Description:**  
+Stakeholders may treat the demo dashboard as the primary or only interface, even when deeper integration is more appropriate.
+
+**Mitigations:**
+
+- Position the dashboard as:
+  - A reference implementation
+  - A read-only exploration tool
+- Encourage production teams to:
+  - Integrate the Python package directly
+  - Build internal tooling around the core library
+
+---
+
+## Summary
+
+The Goodwill-KPI roadmap focuses on **governance, clarity, and operational readiness** rather than expanding the project’s scope or complexity.
+
+Key themes include:
+
+- Optional security and deployment hardening
+- Clear calibration methodology and documentation
+- Strong input governance and normalization standards
+- Practical observability guidance for production environments
+- Incremental, read-only UX enhancements for the dashboard
+
+Throughout all future work, the core principles remain:
+
+- The equations are deterministic and immutable.
+- The implementation is transparent and auditable.
+- Enhancements are optional, layered, and non-invasive.
+- The project remains a reference framework, not a monolithic platform.
