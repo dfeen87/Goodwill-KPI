@@ -161,7 +161,7 @@ All weights default to equal weighting and can be overridden at process startup 
 
 ## License
 
-[MIT](docs/LICENSE) © 2026 Don Michael Feeney Jr.
+MIT License - see [`LICENSE`](LICENSE) file.
 
 ---
 ## Acknowledgments
