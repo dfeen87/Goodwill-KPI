@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Goodwill-KPI"
+abstract: >
+  A deterministic, auditable framework for quantifying organizational and
+  consumer goodwill. Implements three core equations — General Goodwill (G),
+  Consumer Goodwill (CG), and the Unified Goodwill Score (UGS) — together with
+  a minimal read-only HTTP dashboard for executing and visualizing the
+  calculations.
+authors:
+  - family-names: "Feeney Jr."
+    given-names: "Don Michael"
+license: MIT
+repository-code: "https://github.com/dfeen87/Goodwill-KPI"
+version: "1.0.0"
+date-released: "2026-03-01"
+keywords:
+  - goodwill
+  - KPI
+  - metrics
+  - organizational-goodwill
+  - consumer-goodwill
