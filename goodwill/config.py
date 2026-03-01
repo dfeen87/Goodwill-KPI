@@ -15,13 +15,29 @@ audit traceability.
 
 from __future__ import annotations
 
+import math
 import os
 
 
 def _float_env(name: str, default: float) -> float:
-    """Return the float value of environment variable *name*, or *default* if unset."""
+    """Return a finite float from environment variable *name* or *default*."""
     val = os.environ.get(name)
-    return float(val) if val is not None else default
+    if val is None:
+        return default
+
+    try:
+        parsed = float(val)
+    except ValueError as exc:
+        raise ValueError(
+            f"Environment variable {name!r} must be parseable as float; got {val!r}."
+        ) from exc
+
+    if not math.isfinite(parsed):
+        raise ValueError(
+            f"Environment variable {name!r} must be a finite float; got {val!r}."
+        )
+
+    return parsed
 
 
 # ---------------------------------------------------------------------------

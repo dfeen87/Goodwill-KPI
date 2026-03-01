@@ -38,6 +38,9 @@ as keyword arguments to any function in this module.
 
 from __future__ import annotations
 
+import math
+from numbers import Real
+
 from goodwill import config
 
 # ---------------------------------------------------------------------------
@@ -58,6 +61,7 @@ METRIC_MAX: float = 100.0
 
 def _validate_metric(value: float, name: str) -> None:
     """Raise ``ValueError`` if *value* is outside [METRIC_MIN, METRIC_MAX]."""
+    _validate_real_number(value, name)
     if not (METRIC_MIN <= value <= METRIC_MAX):
         raise ValueError(
             f"Input '{name}' = {value!r} is outside the expected range "
@@ -68,11 +72,20 @@ def _validate_metric(value: float, name: str) -> None:
 
 def _validate_T(T: float) -> None:
     """Raise ``ValueError`` if *T* is not a positive number."""
+    _validate_real_number(T, "T")
     if T <= 0:
         raise ValueError(
             f"Time normalization factor T = {T!r} must be a positive number "
             f"(T > 0).  T must be passed explicitly and must not be inferred "
             f"from wall-clock time."
+        )
+
+
+def _validate_real_number(value: float, name: str) -> None:
+    """Raise ``ValueError`` if *value* is not a finite real number."""
+    if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value):
+        raise ValueError(
+            f"Input '{name}' = {value!r} must be a finite real number."
         )
 
 
