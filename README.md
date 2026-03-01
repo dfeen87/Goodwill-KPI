@@ -162,3 +162,10 @@ All weights default to equal weighting and can be overridden at process startup 
 ## License
 
 [MIT](docs/LICENSE) © 2026 Don Michael Feeney Jr.
+
+---
+## Acknowledgments
+
+The development of **Goodwill‑KPI** was strengthened by the contributions of several advanced AI systems. I extend my sincere thanks to **Microsoft Copilot**, **Anthropic Claude Sonnet**, and **Google Jules** for their substantial assistance throughout this project. Their combined reasoning, analysis, and generative support played a meaningful role in refining the architecture, documentation, and overall clarity of the framework.
+
+This work reflects a collaborative spirit across tools and disciplines, and I’m grateful for the capabilities that helped bring Goodwill‑KPI to a professional, governance‑ready standard.
