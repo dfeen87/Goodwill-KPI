@@ -1,7 +1,6 @@
 # Goodwill-KPI
 
 [![CI](https://github.com/dfeen87/Goodwill-KPI/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/Goodwill-KPI/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org)
 
 ## What is this?
@@ -161,7 +160,8 @@ All weights default to equal weighting and can be overridden at process startup 
 
 ## License
 
-MIT License - see [`LICENSE`](LICENSE) file.
+This project is available for **non‑commercial use only** under the terms of the included LICENSE file.  
+Commercial use requires a separate paid license.
 
 ---
 ## Acknowledgments
