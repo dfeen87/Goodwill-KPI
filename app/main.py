@@ -19,17 +19,19 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import os
 from datetime import datetime, timezone
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from goodwill.metrics import compute_CG, compute_G, compute_UGS
 from goodwill import config as _cfg
+from goodwill import __version__
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -38,11 +40,30 @@ from goodwill import config as _cfg
 app = FastAPI(
     title="Goodwill KPI Dashboard",
     description="Read-only governance view for Goodwill metric calculations.",
-    version="1.0.0",
+    version=__version__,
 )
 
 _TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
+
+
+# ---------------------------------------------------------------------------
+# Security headers middleware
+# ---------------------------------------------------------------------------
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add standard security headers to every response."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Content-Security-Policy"] = (
+        # 'unsafe-inline' is required for the dashboard's inline <script> block.
+        # Moving scripts to an external file would allow a stricter policy.
+        "default-src 'self'; script-src 'unsafe-inline'"
+    )
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +109,22 @@ class GoodwillInput(BaseModel):
     ugs_w1: Optional[float] = Field(None, description="Weight for G in UGS (default: config)")
     ugs_w2: Optional[float] = Field(None, description="Weight for CG in UGS (default: config)")
 
+    @model_validator(mode="after")
+    def _validate_weights_finite(self) -> "GoodwillInput":
+        """Reject non-finite weight overrides (NaN, Infinity) at the API boundary."""
+        weight_fields = (
+            "g_w1", "g_w2", "g_w3", "g_w_t",
+            "cg_w1", "cg_w2", "cg_w3", "cg_w4",
+            "ugs_w1", "ugs_w2",
+        )
+        for field_name in weight_fields:
+            value = getattr(self, field_name)
+            if value is not None and not math.isfinite(value):
+                raise ValueError(
+                    f"Weight '{field_name}' = {value!r} must be a finite real number."
+                )
+        return self
+
 
 # ---------------------------------------------------------------------------
 # Routes
@@ -120,14 +157,10 @@ def calculate(inputs: GoodwillInput) -> JSONResponse:
     No state is persisted.  Results are fully traceable to inputs.
     """
     # Resolve weights — use explicit override or fall back to config defaults
-    g_w1, g_w2, g_w3, g_w_t, cg_w1, cg_w2, cg_w3, cg_w4, ugs_w1, ugs_w2 = (
-        _resolve_weights(inputs)
-    )
+    weights = _resolve_weights(inputs)
 
     # Execute equations (server-side, via pure functions — no duplication)
-    return JSONResponse(content=_build_result(inputs, g_w1, g_w2, g_w3, g_w_t,
-                                               cg_w1, cg_w2, cg_w3, cg_w4,
-                                               ugs_w1, ugs_w2))
+    return JSONResponse(content=_build_result(inputs, weights))
 
 
 # ---------------------------------------------------------------------------
@@ -135,67 +168,82 @@ def calculate(inputs: GoodwillInput) -> JSONResponse:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_weights(inputs: GoodwillInput):
-    """Return resolved weight tuples (g, cg, ugs) from inputs or config defaults."""
-    return (
-        inputs.g_w1 if inputs.g_w1 is not None else _cfg.G_W1,
-        inputs.g_w2 if inputs.g_w2 is not None else _cfg.G_W2,
-        inputs.g_w3 if inputs.g_w3 is not None else _cfg.G_W3,
-        inputs.g_w_t if inputs.g_w_t is not None else _cfg.G_W_T,
-        inputs.cg_w1 if inputs.cg_w1 is not None else _cfg.CG_W1,
-        inputs.cg_w2 if inputs.cg_w2 is not None else _cfg.CG_W2,
-        inputs.cg_w3 if inputs.cg_w3 is not None else _cfg.CG_W3,
-        inputs.cg_w4 if inputs.cg_w4 is not None else _cfg.CG_W4,
-        inputs.ugs_w1 if inputs.ugs_w1 is not None else _cfg.UGS_W1,
-        inputs.ugs_w2 if inputs.ugs_w2 is not None else _cfg.UGS_W2,
+class ResolvedWeights(NamedTuple):
+    """Named container for resolved weight values used across all equations."""
+    g_w1: float
+    g_w2: float
+    g_w3: float
+    g_w_t: float
+    cg_w1: float
+    cg_w2: float
+    cg_w3: float
+    cg_w4: float
+    ugs_w1: float
+    ugs_w2: float
+
+
+def _resolve_weights(inputs: GoodwillInput) -> ResolvedWeights:
+    """Return resolved weight values from inputs or config defaults."""
+    return ResolvedWeights(
+        g_w1=inputs.g_w1 if inputs.g_w1 is not None else _cfg.G_W1,
+        g_w2=inputs.g_w2 if inputs.g_w2 is not None else _cfg.G_W2,
+        g_w3=inputs.g_w3 if inputs.g_w3 is not None else _cfg.G_W3,
+        g_w_t=inputs.g_w_t if inputs.g_w_t is not None else _cfg.G_W_T,
+        cg_w1=inputs.cg_w1 if inputs.cg_w1 is not None else _cfg.CG_W1,
+        cg_w2=inputs.cg_w2 if inputs.cg_w2 is not None else _cfg.CG_W2,
+        cg_w3=inputs.cg_w3 if inputs.cg_w3 is not None else _cfg.CG_W3,
+        cg_w4=inputs.cg_w4 if inputs.cg_w4 is not None else _cfg.CG_W4,
+        ugs_w1=inputs.ugs_w1 if inputs.ugs_w1 is not None else _cfg.UGS_W1,
+        ugs_w2=inputs.ugs_w2 if inputs.ugs_w2 is not None else _cfg.UGS_W2,
     )
 
 
-def _build_result(inputs, g_w1, g_w2, g_w3, g_w_t,
-                  cg_w1, cg_w2, cg_w3, cg_w4, ugs_w1, ugs_w2) -> dict:
+def _build_result(inputs: GoodwillInput, weights: ResolvedWeights) -> dict:
     """Execute all goodwill equations and return the full result payload."""
     G = compute_G(
         CR=inputs.CR, ES=inputs.ES, BT=inputs.BT, RG=inputs.RG,
         NCB=inputs.NCB, T=inputs.T,
-        w1=g_w1, w2=g_w2, w3=g_w3, w_t=g_w_t,
+        w1=weights.g_w1, w2=weights.g_w2, w3=weights.g_w3, w_t=weights.g_w_t,
     )
     CG = compute_CG(
         CS=inputs.CS, BR=inputs.BR, CA=inputs.CA, SS=inputs.SS,
         NCB_consumer=inputs.NCB_consumer,
-        w1=cg_w1, w2=cg_w2, w3=cg_w3, w4=cg_w4,
+        w1=weights.cg_w1, w2=weights.cg_w2, w3=weights.cg_w3, w4=weights.cg_w4,
     )
-    UGS = compute_UGS(G=G, CG=CG, T=inputs.T, w1=ugs_w1, w2=ugs_w2)
+    UGS = compute_UGS(G=G, CG=CG, T=inputs.T, w1=weights.ugs_w1, w2=weights.ugs_w2)
     return {
         "G": G,
         "CG": CG,
         "UGS": UGS,
         "G_terms": {
-            "CR_term": inputs.CR * g_w1,
-            "ES_term": inputs.ES * g_w2,
-            "BT_term": inputs.BT * g_w3,
-            "RG_term": inputs.RG * g_w_t,
+            "CR_term": inputs.CR * weights.g_w1,
+            "ES_term": inputs.ES * weights.g_w2,
+            "BT_term": inputs.BT * weights.g_w3,
+            "RG_term": inputs.RG * weights.g_w_t,
             "NCB_penalty": inputs.NCB,
             "T": inputs.T,
             "time_normalized": True,
         },
         "CG_terms": {
-            "CS_term": inputs.CS * cg_w1,
-            "BR_term": inputs.BR * cg_w2,
-            "CA_term": inputs.CA * cg_w3,
-            "SS_term": inputs.SS * cg_w4,
+            "CS_term": inputs.CS * weights.cg_w1,
+            "BR_term": inputs.BR * weights.cg_w2,
+            "CA_term": inputs.CA * weights.cg_w3,
+            "SS_term": inputs.SS * weights.cg_w4,
             "NCB_consumer_penalty": inputs.NCB_consumer,
             "time_normalized": False,
         },
         "UGS_terms": {
-            "G_term": G * ugs_w1,
-            "CG_term": CG * ugs_w2,
+            "G_term": G * weights.ugs_w1,
+            "CG_term": CG * weights.ugs_w2,
             "T": inputs.T,
             "time_normalized": True,
         },
         "weights_used": {
-            "g_w1": g_w1, "g_w2": g_w2, "g_w3": g_w3, "g_w_t": g_w_t,
-            "cg_w1": cg_w1, "cg_w2": cg_w2, "cg_w3": cg_w3, "cg_w4": cg_w4,
-            "ugs_w1": ugs_w1, "ugs_w2": ugs_w2,
+            "g_w1": weights.g_w1, "g_w2": weights.g_w2,
+            "g_w3": weights.g_w3, "g_w_t": weights.g_w_t,
+            "cg_w1": weights.cg_w1, "cg_w2": weights.cg_w2,
+            "cg_w3": weights.cg_w3, "cg_w4": weights.cg_w4,
+            "ugs_w1": weights.ugs_w1, "ugs_w2": weights.ugs_w2,
         },
     }
 
@@ -216,12 +264,11 @@ def export(
     ``format`` query parameter selects the output format (default: ``xlsx``).
     No additional computation beyond the standard equations is performed.
     """
-    g_w1, g_w2, g_w3, g_w_t, cg_w1, cg_w2, cg_w3, cg_w4, ugs_w1, ugs_w2 = (
-        _resolve_weights(inputs)
-    )
-    d = _build_result(inputs, g_w1, g_w2, g_w3, g_w_t,
-                      cg_w1, cg_w2, cg_w3, cg_w4, ugs_w1, ugs_w2)
+    weights = _resolve_weights(inputs)
+    d = _build_result(inputs, weights)
 
+    # 'format' is regex-validated to 'xlsx|csv' by the Query constraint, so the
+    # filename is safe to use directly in the Content-Disposition header.
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%S")
     filename = f"goodwill_export_{timestamp}.{format}"
 

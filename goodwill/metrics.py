@@ -149,7 +149,8 @@ def compute_G(
     Raises
     ------
     ValueError
-        If any metric input is outside [0, 100], or if T ≤ 0.
+        If any metric input is outside [0, 100], if T ≤ 0, or if any weight
+        is not a finite real number.
     """
     _validate_metric(CR, "CR")
     _validate_metric(ES, "ES")
@@ -157,6 +158,10 @@ def compute_G(
     _validate_metric(RG, "RG")
     _validate_metric(NCB, "NCB")
     _validate_T(T)
+    _validate_real_number(w1, "w1")
+    _validate_real_number(w2, "w2")
+    _validate_real_number(w3, "w3")
+    _validate_real_number(w_t, "w_t")
 
     return ((CR * w1) + (ES * w2) + (BT * w3) + (RG * w_t) - NCB) / T
 
@@ -213,13 +218,18 @@ def compute_CG(
     Raises
     ------
     ValueError
-        If any metric input is outside [0, 100].
+        If any metric input is outside [0, 100], or if any weight is not a
+        finite real number.
     """
     _validate_metric(CS, "CS")
     _validate_metric(BR, "BR")
     _validate_metric(CA, "CA")
     _validate_metric(SS, "SS")
     _validate_metric(NCB_consumer, "NCB_consumer")
+    _validate_real_number(w1, "w1")
+    _validate_real_number(w2, "w2")
+    _validate_real_number(w3, "w3")
+    _validate_real_number(w4, "w4")
 
     return (CS * w1) + (BR * w2) + (CA * w3) + (SS * w4) - NCB_consumer
 
@@ -264,8 +274,13 @@ def compute_UGS(
     Raises
     ------
     ValueError
-        If T ≤ 0.
+        If G or CG is not a finite real number, if T ≤ 0, or if any weight
+        is not a finite real number.
     """
+    _validate_real_number(G, "G")
+    _validate_real_number(CG, "CG")
     _validate_T(T)
+    _validate_real_number(w1, "w1")
+    _validate_real_number(w2, "w2")
 
     return ((G * w1) + (CG * w2)) / T

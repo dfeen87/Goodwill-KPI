@@ -145,20 +145,50 @@
 
   function buildTable(tableId, rows) {
     const t = document.getElementById(tableId);
-    t.innerHTML = '<tr><th>Term</th><th>Value</th><th>Note</th></tr>' +
-      rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]||''}</td></tr>`).join('');
+    while (t.firstChild) t.removeChild(t.firstChild);
+    const header = document.createElement('tr');
+    ['Term', 'Value', 'Note'].forEach(text => {
+      const th = document.createElement('th');
+      th.textContent = text;
+      header.appendChild(th);
+    });
+    t.appendChild(header);
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      [r[0], r[1], r[2] || ''].forEach(text => {
+        const td = document.createElement('td');
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      t.appendChild(tr);
+    });
+  }
+
+  function _collectPayload() {
+    const fields = [
+      'CR', 'ES', 'BT', 'RG', 'NCB', 'CS', 'BR', 'CA', 'SS',
+      'NCB_consumer', 'T', 'g_w1', 'g_w2', 'g_w3', 'g_w_t',
+      'cg_w1', 'cg_w2', 'cg_w3', 'cg_w4', 'ugs_w1', 'ugs_w2',
+    ];
+    const payload = {};
+    for (const id of fields) {
+      const v = num(id);
+      if (isNaN(v)) {
+        return { error: `Field "${id}" is empty or not a valid number. Please enter a numeric value.` };
+      }
+      payload[id] = v;
+    }
+    return { payload };
   }
 
   async function exportFile(format) {
     document.getElementById('err').textContent = '';
-    const payload = {
-      CR: num('CR'), ES: num('ES'), BT: num('BT'), RG: num('RG'),
-      NCB: num('NCB'), CS: num('CS'), BR: num('BR'), CA: num('CA'),
-      SS: num('SS'), NCB_consumer: num('NCB_consumer'), T: num('T'),
-      g_w1: num('g_w1'), g_w2: num('g_w2'), g_w3: num('g_w3'), g_w_t: num('g_w_t'),
-      cg_w1: num('cg_w1'), cg_w2: num('cg_w2'), cg_w3: num('cg_w3'), cg_w4: num('cg_w4'),
-      ugs_w1: num('ugs_w1'), ugs_w2: num('ugs_w2'),
-    };
+    const result = _collectPayload();
+    if (result.error) {
+      document.getElementById('err').textContent = result.error;
+      return;
+    }
+    const payload = result.payload;
 
     let resp;
     try {
@@ -192,14 +222,12 @@
 
   async function runCalculation() {
     document.getElementById('err').textContent = '';
-    const payload = {
-      CR: num('CR'), ES: num('ES'), BT: num('BT'), RG: num('RG'),
-      NCB: num('NCB'), CS: num('CS'), BR: num('BR'), CA: num('CA'),
-      SS: num('SS'), NCB_consumer: num('NCB_consumer'), T: num('T'),
-      g_w1: num('g_w1'), g_w2: num('g_w2'), g_w3: num('g_w3'), g_w_t: num('g_w_t'),
-      cg_w1: num('cg_w1'), cg_w2: num('cg_w2'), cg_w3: num('cg_w3'), cg_w4: num('cg_w4'),
-      ugs_w1: num('ugs_w1'), ugs_w2: num('ugs_w2'),
-    };
+    const result = _collectPayload();
+    if (result.error) {
+      document.getElementById('err').textContent = result.error;
+      return;
+    }
+    const payload = result.payload;
 
     let resp;
     try {
