@@ -36,9 +36,7 @@ Goodwill-KPI/
 │       └── dashboard.html      # Read-only browser dashboard
 ├── docs/
 │   ├── CALIBRATION.md          # Calibration guidance and tuning notes
-│   ├── CITATION.cff            # Citation metadata
 │   ├── INPUT-GOVERNANCE.md     # Input governance and data quality guidelines
-│   ├── LICENSE                 # MIT License
 │   ├── OBSERVABILITY.md        # Observability and monitoring notes
 │   ├── ROADMAP.md              # Project roadmap
 │   ├── SECURITY.md             # Security policy
@@ -52,7 +50,9 @@ Goodwill-KPI/
 │   ├── __init__.py
 │   ├── test_dashboard.py       # API and dashboard integration tests
 │   └── test_goodwill.py        # Unit tests for all metric functions
+├── CITATION.cff                # Citation metadata
 ├── conftest.py                 # Shared pytest fixtures
+├── LICENSE                     # Non-commercial license
 ├── render.yaml                 # Render.com deployment configuration
 ├── requirements-dev.txt        # Development dependencies (pytest, httpx, …)
 └── requirements.txt            # Runtime dependencies (fastapi, uvicorn, …)
