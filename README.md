@@ -48,11 +48,12 @@ Goodwill-KPI/
 │   └── metrics.py              # Pure functions: compute_G, compute_CG, compute_UGS
 ├── tests/
 │   ├── __init__.py
+│   ├── test_config.py          # Unit tests for weight configuration loading
 │   ├── test_dashboard.py       # API and dashboard integration tests
 │   └── test_goodwill.py        # Unit tests for all metric functions
 ├── CITATION.cff                # Citation metadata
 ├── conftest.py                 # Shared pytest fixtures
-├── LICENSE                     # Non-commercial license
+├── LICENSE                     # Hybrid non-commercial / commercial license
 ├── render.yaml                 # Render.com deployment configuration
 ├── requirements-dev.txt        # Development dependencies (pytest, httpx, …)
 └── requirements.txt            # Runtime dependencies (fastapi, uvicorn, …)
