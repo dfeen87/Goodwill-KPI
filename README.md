@@ -53,7 +53,7 @@ Goodwill-KPI/
 │   └── test_goodwill.py        # Unit tests for all metric functions
 ├── CITATION.cff                # Citation metadata
 ├── conftest.py                 # Shared pytest fixtures
-├── LICENSE                     # Hybrid non-commercial / commercial license
+├── LICENSE                     # MIT License
 ├── render.yaml                 # Render.com deployment configuration
 ├── requirements-dev.txt        # Development dependencies (pytest, httpx, …)
 └── requirements.txt            # Runtime dependencies (fastapi, uvicorn, …)
@@ -161,8 +161,10 @@ All weights default to equal weighting and can be overridden at process startup 
 
 ## License
 
-This project is available for **non‑commercial use only** under the terms of the included LICENSE file.  
-Commercial use requires a separate paid license.
+This project is 100% open-source under the **MIT License**. You may use, modify, distribute, and sublicense it under the terms in the included `LICENSE` file.
+
+## Enterprise Consulting & Integration
+This architecture is fully open-source under the MIT License. If your organization requires custom scaling, proprietary integration, or dedicated technical consulting to deploy these models at an enterprise level, please reach out at: dfeen87@gmail.com
 
 ---
 ## Acknowledgments
